@@ -101,3 +101,33 @@ const createBook = async function (req, res) {
     }
 }
 
+
+// ====================================== Get All Books List ==================================================//
+const getBooks = async function (req, res) {
+    try {
+        let data = req.query;
+        const { userId, category, subcategory } = data;
+
+        if (userId) {
+
+            if (!isValidObjectId(userId)) {
+                return res.status(400).send({ status: false, message: "Invalid User ID." });
+            }
+            const checkUserId = await userModel.findById(userId);
+            if (!checkUserId) {
+                return res.status(404).send({ status: false, message: "Data not found with this User ID. Please enter a valid User ID." });
+            }
+        }
+
+        const bookDetails = await bookModel.find({ ...data, isDeleted: false }).sort({ title: 1 }).select({ isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0, ISBN: 0, subcategory: 0 });
+        if (bookDetails.length == 0) {
+            return res.status(404).send({ status: false, message: "Data not found or data already deleted." });
+        }
+
+        res.status(200).send({ status: true, message: "Books List.", data: bookDetails });
+    } catch (err) {
+        return res.status(500).send({ status: false, message: err.message });
+    }
+}
+
+
