@@ -131,3 +131,34 @@ const getBooks = async function (req, res) {
 }
 
 
+// ================================= Get Books List By BookId =================================================//
+const getBookById = async function (req, res) {
+    try {
+        let bookId = req.params.bookId;
+
+        if (!bookId) {
+            return res.status(400).send({ status: false, message: "Please provide book Id in param." });
+        }
+        if (!isValidObjectId(bookId)) {
+            return res.status(400).send({ status: false, message: "Invalid Book Id." });
+        }
+
+        let getBookData = await bookModel.findOne({ _id: bookId, isDeleted: false }).select({ __v: 0 });
+        if (!getBookData) {
+            return res.status(404).send({ status: false, message: "No book exist with this id or it might be deleted." });
+        }
+
+        let reviewData = await reviewModel.find({ bookId: bookId, isDeleted: false }).select({ _id: 1, bookId: 1, reviewedBy: 1, reviewedAt: 1, rating: 1, review: 1 });
+
+        let reviewCount = reviewData.length;
+
+        getBookData._doc.reviewsData = reviewData;
+        getBookData._doc.reviews = reviewCount;
+
+        return res.status(200).send({ status: true, message: 'Books List', data: getBookData });
+    } catch (error) {
+        return res.status(500).send({ status: false, message: error.message });
+    }
+}
+
+
