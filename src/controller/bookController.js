@@ -162,3 +162,95 @@ const getBookById = async function (req, res) {
 }
 
 
+
+// =================================== Update Books ===========================================================//
+const updateBooks = async function (req, res) {
+    try {
+        let BookID = req.params.bookId;
+        let data = req.body;
+
+        const { title, excerpt, ISBN, releasedAt } = data;
+
+        if (Object.keys(data).length != 0) {
+
+            if (!title && !excerpt && !ISBN && !releasedAt) {
+                return res.status(400).send({ status: false, message: "At least one field is required." });
+            }
+
+            let updateData = {};
+
+            if (title) {
+                if (title && typeof title != "string") {
+                    return res.status(400).send({ status: false, message: "Title must be in string" });
+                }
+                if (!title.trim()) {
+                    return res.status(400).send({ status: false, message: "Title can not be empty." });
+                }
+                let trimTitle = title.toLowerCase().trim();
+                const checkTitle = await bookModel.findOne({ title: trimTitle });
+                if (checkTitle) {
+                    return res.status(400).send({ status: false, message: `The title ${trimTitle} is already is in use for a Book.Try another one.` });
+                }
+                updateData.title = trimTitle;
+            }
+
+            if (excerpt) {
+                if (excerpt && typeof excerpt != "string") {
+                    return res.status(400).send({ status: false, message: "excerpt must be in string" });
+                }
+                if (!excerpt.trim()) {
+                    return res.status(400).send({ status: false, message: "Excerpt can not be empty." });
+                }
+                let trimExcerpt = excerpt.trim();
+                updateData.excerpt = trimExcerpt;
+            }
+
+            if (ISBN) {
+                if (ISBN && typeof ISBN != "string") {
+                    return res.status(400).send({ status: false, message: "ISBN must be in string" });
+                }
+                if (!ISBN.trim()) {
+                    return res.status(400).send({ status: false, message: "ISBN can not be empty." });
+                }
+                let trimISBN = ISBN.trim();
+                if (!validateISBN(trimISBN)) {
+                    return res.status(400).send({ status: false, message: " Invalid ISBN number it should contain only 13 digits" });
+                }
+                const checkISBN = await bookModel.findOne({ ISBN: trimISBN });
+                if (checkISBN) {
+                    return res.status(400).send({ status: false, message: `The ISBN ${trimISBN} is already is in use for a Book.Try another one.` });
+                }
+                updateData.ISBN = trimISBN;
+            }
+
+            if (releasedAt) {
+                if (releasedAt && typeof releasedAt != "string") {
+                    return res.status(400).send({ status: false, message: "releasedAt must be in string" });
+                }
+                let trimReleasedAt = releasedAt.trim();
+                if (moment(trimReleasedAt, "YYYY-MM-DD").format("YYYY-MM-DD") !== trimReleasedAt) {
+                    return res.status(400).send({ status: false, message: "Please enter the Date in the format of 'YYYY-MM-DD'." });
+                }
+                updateData.releasedAt = trimReleasedAt;
+            }
+
+            const updateBookDetails = await bookModel.findOneAndUpdate(
+                { _id: BookID, isDeleted: false },
+                updateData,
+                { new: true }
+            );
+
+            if (!updateBookDetails) {
+                return res.status(404).send({ status: false, message: "No data found for updation." });
+            }
+
+            return res.status(200).send({ status: true, message: "Success", data: updateBookDetails });
+        } else {
+            return res.status(400).send({ status: false, message: "Invalid request, body can't be empty." });
+        }
+    } catch (err) {
+        return res.status(500).send({ status: false, message: err.message });
+    }
+}
+
+
