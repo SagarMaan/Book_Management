@@ -254,3 +254,31 @@ const updateBooks = async function (req, res) {
 }
 
 
+
+// ====================================== Delete Books ===================================================//
+const deleteBookById = async function (req, res) {
+    try {
+        let bookId = req.params.bookId;
+
+        let deleteByBookId = await bookModel.findOneAndUpdate(
+            { _id: bookId, isDeleted: false },
+            { isDeleted: true, deletedAt: Date.now() }
+        );
+
+        if (!deleteByBookId) {
+            return res.status(404).send({ status: false, message: "Book is already deleted." });
+        }
+
+        await reviewModel.updateMany(
+            { bookId: bookId, isDeleted: false },
+            { isDeleted: true }
+        );
+
+        return res.status(200).send({ status: true, message: "Successfully Deleted." });
+    } catch (error) {
+        res.status(500).send({ status: false, error: error.message });
+    }
+}
+
+
+module.exports = { createBook, getBooks, getBookById, updateBooks, deleteBookById };
